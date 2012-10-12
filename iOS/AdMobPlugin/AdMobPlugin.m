@@ -38,6 +38,36 @@
   return self;
 }
 
+- (void) deleteBanner:(NSMutableArray *)arguments
+             withDict:(NSMutableDictionary *)options
+{
+    if (self.bannerView != nil) {
+        [self.bannerView removeFromSuperview];
+        bannerView_.delegate = nil;
+        [bannerView_ release];
+        self.bannerView = nil;
+        
+        
+        // Restore the frame size         
+        UIDeviceOrientation currentOrientation = [[UIDevice currentDevice] orientation];
+        
+        // Frame of the main Cordova webview.
+        CGRect webViewFrame = self.webView.frame;
+        // Frame of the main container view that holds the Cordova webview.
+        CGRect superViewFrame = self.webView.superview.frame;
+
+        
+        if (UIInterfaceOrientationIsLandscape(currentOrientation)) {
+            // The super view's frame hasn't been updated so use its width
+            // as the height.
+            webViewFrame.size.height = superViewFrame.size.width;
+        } else {
+            webViewFrame.size.height = superViewFrame.size.height;
+        }
+        self.webView.frame = webViewFrame;
+    }
+}
+
 // The javascript from the AdMob plugin calls this when createBannerView is
 // invoked. This method parses the arguments passed in.
 - (void)createBannerView:(NSMutableArray *)arguments
@@ -61,6 +91,12 @@
                                                      @"Invalid ad size"];
     [self writeJavascript:[pluginResult toErrorCallbackString:callbackId]];
     return;
+  } else if (self.bannerView != nil) {
+      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                       messageAsString:@"AdMobPlugin:"
+                      @"Banner already created"];
+      [self writeJavascript:[pluginResult toErrorCallbackString:callbackId]];
+      return;
   }
   if ([options objectForKey:KEY_POSITION_AT_TOP_ARG]) {
     positionAdAtTop_=
@@ -282,6 +318,33 @@
       @"cordova.fireDocumentEvent('onLeaveApplication');"];
 }
 
+- (CGRect) createRectangle:(NSMutableDictionary *) options
+{
+    CGFloat positionX = GAD_SIZE_320x50.width;
+    CGFloat positionY = self.webView.superview.frame.size.height - (GAD_SIZE_320x50.height);
+    CGFloat width = GAD_SIZE_320x50.width;
+    CGFloat height = GAD_SIZE_320x50.height;
+    
+    if([options objectForKey:@"positionX"])
+    {
+        positionX=[[options objectForKey:@"positionX"] floatValue];
+    }
+    if([options objectForKey:@"positionY"])
+    {
+        positionY=[[options objectForKey:@"positionY"] floatValue];
+    }
+    if([options objectForKey:@"width"])
+    {
+        width=[[options objectForKey:@"width"] floatValue];
+    }
+    if([options objectForKey:@"height"])
+    {
+        height=[[options objectForKey:@"height"] floatValue];
+    }
+    
+    return CGRectMake(positionX, positionY, width, height);
+}
+
 #pragma mark Cleanup
 
 - (void)dealloc {
@@ -290,8 +353,10 @@
       removeObserver:self
                 name:UIDeviceOrientationDidChangeNotification
               object:nil];
-  bannerView_.delegate = nil;
-  [bannerView_ release];
+    if (bannerView_ != nil) {
+        bannerView_.delegate = nil;
+        [bannerView_ release];
+    }
   [super dealloc];
 }
 

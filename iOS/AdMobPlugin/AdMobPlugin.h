@@ -25,9 +25,14 @@
 
 @property(nonatomic, retain) GADBannerView *bannerView;
 
+
 - (void)createBannerView:(NSMutableArray *)arguments
-                withDict:(NSMutableDictionary *)options;
+         withDict:(NSMutableDictionary *)options;
+
 - (void)requestAd:(NSMutableArray *)arguments
          withDict:(NSMutableDictionary *)options;
+
+- (void) deleteBanner:(NSMutableArray *)arguments
+             withDict:(NSMutableDictionary *)options;
 
 @end

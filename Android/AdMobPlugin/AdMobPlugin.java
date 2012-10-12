@@ -38,6 +38,8 @@ public class AdMobPlugin extends Plugin {
   /** Cordova Actions. */
   private static final String ACTION_CREATE_BANNER_VIEW = "createBannerView";
   private static final String ACTION_REQUEST_AD = "requestAd";
+  private static final String ACTION_DELETE_AD = "deleteBanner";
+
 
   /**
    * This is the main method for the AdMob plugin.  All API calls go through here.
@@ -56,6 +58,8 @@ public class AdMobPlugin extends Plugin {
       result = executeCreateBannerView(inputs);
     } else if (ACTION_REQUEST_AD.equals(action)) {
       result = executeRequestAd(inputs);
+    } else if (ACTION_DELETE_AD.equals(action)) {
+      result = executeDeleteAd(inputs);
     } else {
       Log.d(LOGTAG, String.format("Invalid action passed: %s", action));
       result = new PluginResult(Status.INVALID_ACTION);
@@ -63,7 +67,11 @@ public class AdMobPlugin extends Plugin {
     return result;
   }
 
-  /**
+    private PluginResult executeDeleteAd(JSONArray inputs) {
+        return executeRunnable(new DestroyBannerViewRunnable());
+    }
+
+    /**
    * Parses the create banner view input parameters and runs the create banner
    * view action on the UI thread.  If this request is successful, the developer
    * should make the requestAd call to request an ad for the banner.
@@ -155,6 +163,17 @@ public class AdMobPlugin extends Plugin {
     }
   }
 
+  private class DestroyBannerViewRunnable extends AdMobRunnable {
+
+      @Override
+      public void run() {
+          LinearLayoutSoftKeyboardDetect parentView = (LinearLayoutSoftKeyboardDetect) webView.getParent();
+          parentView.removeView(adView);
+          adView.destroy();
+          adView = null;
+      }
+  }
+
   /** Runnable for the createBannerView action. */
   private class CreateBannerViewRunnable extends AdMobRunnable {
     private String publisherId;
@@ -173,8 +192,7 @@ public class AdMobPlugin extends Plugin {
       } else {
         adView = new AdView(cordova.getActivity(), adSize, publisherId);
         adView.setAdListener(new BannerListener());
-        LinearLayoutSoftKeyboardDetect parentView =
-            (LinearLayoutSoftKeyboardDetect) webView.getParent();
+        LinearLayoutSoftKeyboardDetect parentView = (LinearLayoutSoftKeyboardDetect) webView.getParent();
         if (positionAtTop) {
           parentView.addView(adView, 0);
         } else {
